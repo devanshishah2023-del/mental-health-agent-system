@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Mental Health Agent System</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --teal:#1D9E75;--teal-l:#E1F5EE;--teal-d:#085041;
+  --purple:#534AB7;--purple-l:#EEEDFE;
+  --coral:#D85A30;--coral-l:#FAECE7;
+  --amber:#BA7517;--amber-l:#FAEEDA;
+  --green:#0F6E56;--green-l:#E1F5EE;
+  --border:rgba(0,0,0,.11);
+  --text:#1a1a1a;--muted:#6b6b6b;
+  --bg:#fff;--surface:#f8f7f4;--surface2:#f2f1ed;
+  --r:10px;
+}
+@media(prefers-color-scheme:dark){:root{
+  --border:rgba(255,255,255,.11);
+  --text:#e5e3db;--muted:#999;
+  --bg:#1b1b19;--surface:#242422;--surface2:#2e2e2b;
+  --teal-l:rgba(29,158,117,.18);--purple-l:rgba(83,74,183,.18);
+  --coral-l:rgba(216,90,48,.18);--amber-l:rgba(186,117,23,.18);--green-l:rgba(15,110,86,.18);
+}}
+
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--text);background:var(--bg);height:100dvh;display:flex;flex-direction:column;overflow:hidden}
+
+/* ── HEADER ── */
+header{display:flex;align-items:center;gap:11px;padding:12px 20px;border-bottom:.5px solid var(--border);flex-shrink:0}
+.logo{font-size:24px}
+header h1{font-size:15px;font-weight:600}
+header p{font-size:11px;color:var(--muted);margin-top:1px}
+.pill-live{margin-left:auto;display:flex;align-items:center;gap:5px;font-size:11px;font-weight:500;padding:4px 10px;border-radius:99px;background:var(--teal-l);color:var(--teal-d)}
+.pulse{width:7px;height:7px;border-radius:50%;background:var(--teal);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+/* ── TABS ── */
+nav{display:flex;border-bottom:.5px solid var(--border);padding:0 20px;overflow-x:auto;flex-shrink:0;background:var(--bg)}
+.tab{padding:10px 13px;font-size:13px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;color:var(--muted);white-space:nowrap;transition:all .18s;user-select:none}
+.tab.on{color:var(--teal);border-bottom-color:var(--teal)}
+.tab:hover:not(.on){color:var(--text)}
+
+/* ── PANELS ── */
+main{flex:1;overflow:hidden;display:flex;flex-direction:column}
+.panel{display:none;flex:1;overflow-y:auto;padding:18px 20px;flex-direction:column;gap:13px}
+.panel.on{display:flex}
+.sec{font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-bottom:2px}
+
+/* ── AGENT GRID ── */
+.agent-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:9px}
+.acard{background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:15px;transition:border-color .2s,box-shadow .2s}
+.acard:hover{border-color:var(--teal);box-shadow:0 2px 10px rgba(29,158,117,.1)}
+.acard-head{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+.aicon{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.aname{font-size:14px;font-weight:600}
+.arole{font-size:11px;color:var(--muted);margin-top:1px}
+.adesc{font-size:12px;color:var(--muted);line-height:1.6}
+.abadge{display:inline-flex;align-items:center;gap:4px;margin-top:9px;font-size:11px;font-weight:500;padding:3px 9px;border-radius:99px}
+.bdot{width:6px;height:6px;border-radius:50%}
+
+/* ── CHAT ── */
+.chat-wrap{display:flex;flex-direction:column;height:100%;gap:10px}
+.pills{display:flex;gap:7px;flex-wrap:wrap}
+.apill{display:flex;align-items:center;gap:5px;padding:6px 12px;border-radius:99px;border:.5px solid var(--border);background:var(--bg);cursor:pointer;font-size:12px;font-weight:500;transition:all .18s;user-select:none}
+.apill.on{border-color:var(--teal);background:var(--teal-l);color:var(--teal-d)}
+.apill:hover:not(.on){border-color:var(--teal)}
+
+.crisis-bar{display:flex;align-items:flex-start;gap:9px;background:#FFF8E1;border:.5px solid #E6AC00;border-radius:8px;padding:9px 13px;font-size:12px;color:#7A5800;flex-shrink:0}
+@media(prefers-color-scheme:dark){.crisis-bar{background:rgba(230,172,0,.12);border-color:rgba(230,172,0,.3);color:#D4A800}}
+.crisis-bar strong{display:block;font-size:13px;margin-bottom:1px}
+
+.msgs{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:11px;padding:2px 0 6px;min-height:0}
+.msg{display:flex;gap:8px;align-items:flex-start}
+.msg.u{flex-direction:row-reverse}
+.mavatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;margin-top:2px}
+.mlabel{font-size:11px;color:var(--muted);margin-bottom:3px}
+.msg.u .mlabel{text-align:right}
+.mbubble{max-width:78%;padding:10px 14px;border-radius:14px;font-size:13px;line-height:1.65;white-space:pre-wrap;word-break:break-word}
+.msg.a .mbubble{background:var(--surface);border:.5px solid var(--border);border-radius:4px 14px 14px 14px}
+.msg.u .mbubble{background:var(--teal);color:#fff;border-radius:14px 4px 14px 14px}
+.crisis-msg .mbubble{background:var(--coral-l);border-color:var(--coral)!important}
+
+.typing{display:flex;gap:5px;align-items:center;padding:12px 15px;background:var(--surface);border:.5px solid var(--border);border-radius:4px 14px 14px 14px;width:fit-content}
+.tdot{width:7px;height:7px;border-radius:50%;background:var(--muted);animation:bounce .9s ease-in-out infinite}
+.tdot:nth-child(2){animation-delay:.15s}.tdot:nth-child(3){animation-delay:.3s}
+@keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
+
+.input-row{display:flex;gap:8px;padding-top:9px;border-top:.5px solid var(--border);flex-shrink:0}
+.input-row input{flex:1;padding:10px 14px;border:.5px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg);color:var(--text);outline:none;transition:border-color .18s}
+.input-row input:focus{border-color:var(--teal)}
+.sbtn{padding:10px 18px;background:var(--teal);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .18s;white-space:nowrap}
+.sbtn:hover{opacity:.85}.sbtn:disabled{opacity:.4;cursor:not-allowed}
+
+/* intent badge on messages */
+.ibadge{display:inline-block;font-size:10px;font-weight:600;padding:2px 7px;border-radius:99px;background:var(--surface2);color:var(--muted);margin-bottom:5px;letter-spacing:.03em;text-transform:uppercase}
+
+/* ── PIPELINE ── */
+.pipeline{display:flex;flex-direction:column;gap:5px}
+.pstep{display:flex;gap:12px;align-items:center;padding:13px 15px;background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);transition:all .3s}
+.pstep.run{border-color:var(--teal);background:var(--teal-l)}
+.pstep.done{border-color:rgba(29,158,117,.4)}
+.picon{font-size:20px;width:30px;text-align:center;flex-shrink:0}
+.pbody{flex:1}
+.pname{font-size:13px;font-weight:600}
+.pdetail{font-size:12px;color:var(--muted);margin-top:2px}
+.pagent{font-size:11px;color:var(--teal);margin-top:3px;font-weight:500}
+.pstat{font-size:11px;font-weight:600;padding:3px 10px;border-radius:99px;background:var(--surface);color:var(--muted);white-space:nowrap;transition:all .3s}
+.arr{text-align:center;color:var(--muted);font-size:13px;padding:1px 0}
+.runbtn{margin-top:5px;padding:11px;background:var(--teal);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;width:100%;transition:opacity .18s}
+.runbtn:hover{opacity:.85}.runbtn:disabled{opacity:.4;cursor:not-allowed}
+
+/* ── INSIGHTS ── */
+.mgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.mcard{background:var(--surface);border-radius:var(--r);padding:14px}
+.mlbl{font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
+.mval{font-size:26px;font-weight:600}
+.msub{font-size:12px;color:var(--muted);margin-top:2px}
+.scard{background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:14px}
+.mood-row{display:flex;gap:6px;align-items:center;margin-top:9px;flex-wrap:wrap}
+.mbtn{font-size:22px;padding:5px 7px;border-radius:8px;cursor:pointer;border:none;background:transparent;transition:background .15s;line-height:1}
+.mbtn:hover{background:var(--surface)}.mbtn.on{background:var(--teal-l)}
+.mnote{font-size:12px;color:var(--muted);margin-left:4px}
+.witem{display:flex;align-items:center;gap:8px;margin:7px 0}
+.wlbl{font-size:12px;color:var(--muted);width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex-shrink:0}
+.wbg{flex:1;height:5px;background:var(--border);border-radius:99px;overflow:hidden}
+.wfill{height:100%;border-radius:99px;transition:width .8s ease}
+.wpct{font-size:11px;color:var(--muted);width:30px;text-align:right}
+
+/* ── SETTINGS ── */
+.setsec{background:var(--bg);border:.5px solid var(--border);border-radius:var(--r);padding:15px}
+.setsec h3{font-size:14px;font-weight:600;margin-bottom:11px}
+.setrow{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-top:.5px solid var(--border)}
+.setrow:first-of-type{border-top:none}
+.setlbl{font-size:13px}.setsub{font-size:11px;color:var(--muted);margin-top:2px}
+.tog{width:40px;height:22px;background:var(--border);border-radius:99px;position:relative;cursor:pointer;flex-shrink:0;transition:background .2s}
+.tog.on{background:var(--teal)}
+.tthumb{width:18px;height:18px;background:#fff;border-radius:50%;position:absolute;top:2px;left:2px;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.tog.on .tthumb{transform:translateX(18px)}
+select{padding:6px 10px;border:.5px solid var(--border);border-radius:6px;font-size:12px;background:var(--bg);color:var(--text);cursor:pointer}
+.crisis-sec{border-color:rgba(216,90,48,.4)!important;background:var(--coral-l)!important}
+.crisis-sec h3{color:var(--coral)}
+.crisis-sec .tog.on{background:var(--coral)}
+.disclaimer{font-size:11px;color:var(--muted);text-align:center;padding:8px 0}
+
+/* ── RESPONSIVE ── */
+@media(max-width:500px){
+  .agent-grid{grid-template-columns:1fr}
+  .mgrid{grid-template-columns:1fr}
+  header h1{font-size:14px}
+  .pill-live span:last-child{display:none}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🧠</div>
+  <div>
+    <h1>Mental Health Agent System</h1>
+    <p>Offline · No API key · 100% private</p>
+  </div>
+  <div class="pill-live"><span class="pulse"></span><span>All agents active</span></div>
+</header>
+
+<nav>
+  <div class="tab on"  onclick="go('agents')">Agents</div>
+  <div class="tab"     onclick="go('chat')">Chat</div>
+  <div class="tab"     onclick="go('pipeline')">Pipeline</div>
+  <div class="tab"     onclick="go('insights')">Insights</div>
+  <div class="tab"     onclick="go('settings')">Settings</div>
+</nav>
+
+<main>
+
+<!-- AGENTS -->
+<div class="panel on" id="p-agents">
+  <div class="sec">Active agents</div>
+  <div class="agent-grid" id="agent-grid"></div>
+</div>
+
+<!-- CHAT -->
+<div class="panel" id="p-chat">
+  <div class="chat-wrap">
+    <div>
+      <div class="sec" style="margin-bottom:8px">Choose an agent</div>
+      <div class="pills" id="pills"></div>
+    </div>
+    <div class="crisis-bar">
+      <span style="font-size:18px;flex-shrink:0">⚠️</span>
+      <div><strong>Crisis resources — always available</strong>988 Suicide &amp; Crisis Lifeline · Call or text 988 · Crisis Text Line: text HOME to 741741</div>
+    </div>
+    <div class="msgs" id="msgs"></div>
+    <div class="input-row">
+      <input id="inp" placeholder="Share what's on your mind…" onkeydown="if(event.key==='Enter'&&!event.shiftKey)send()"/>
+      <button class="sbtn" id="sbtn" onclick="send()">Send</button>
+    </div>
+  </div>
+</div>
+
+<!-- PIPELINE -->
+<div class="panel" id="p-pipeline">
+  <div class="sec">How a message flows through the system</div>
+  <div class="pipeline" id="pipeline"></div>
+  <button class="runbtn" id="runbtn" onclick="runPipeline()">▶ Simulate pipeline run</button>
+</div>
+
+<!-- INSIGHTS -->
+<div class="panel" id="p-insights">
+  <div class="sec">Session analytics</div>
+  <div class="mgrid">
+    <div class="mcard"><div class="mlbl">Sessions today</div><div class="mval" style="color:var(--teal)">12</div><div class="msub">↑ 3 from yesterday</div></div>
+    <div class="mcard"><div class="mlbl">Avg helpfulness</div><div class="mval" style="color:var(--purple)">4.3/5</div><div class="msub">Based on 47 ratings</div></div>
+    <div class="mcard"><div class="mlbl">Crisis flags</div><div class="mval" style="color:var(--coral)">2</div><div class="msub">Escalated to human today</div></div>
+    <div class="mcard"><div class="mlbl">Agent uptime</div><div class="mval" style="color:var(--teal)">99.8%</div><div class="msub">All 5 agents healthy</div></div>
+  </div>
+  <div class="scard">
+    <div class="mlbl">How are you feeling right now?</div>
+    <div class="mood-row">
+      <button class="mbtn" onclick="mood(this,'😢','Feeling really hard right now')">😢</button>
+      <button class="mbtn" onclick="mood(this,'😞','Feeling low')">😞</button>
+      <button class="mbtn" onclick="mood(this,'😐','Getting by')">😐</button>
+      <button class="mbtn" onclick="mood(this,'🙂','Doing okay')">🙂</button>
+      <button class="mbtn" onclick="mood(this,'😊','Feeling good')">😊</button>
+      <span class="mnote" id="mnote">Tap to check in</span>
+    </div>
+  </div>
+  <div class="scard">
+    <div class="mlbl">Agent workload</div>
+    <div id="workload"></div>
+  </div>
+</div>
+
+<!-- SETTINGS -->
+<div class="panel" id="p-settings">
+  <div class="setsec">
+    <h3>Agent configuration</h3>
+    <div class="setrow"><div><div class="setlbl">Human escalation</div><div class="setsub">Route crisis signals to a real clinician</div></div><div class="tog on" onclick="this.classList.toggle('on')"><div class="tthumb"></div></div></div>
+    <div class="setrow"><div><div class="setlbl">Safety screening</div><div class="setsub">PHQ-9 / Columbia Protocol at session start</div></div><div class="tog on" onclick="this.classList.toggle('on')"><div class="tthumb"></div></div></div>
+    <div class="setrow"><div><div class="setlbl">Session memory</div><div class="setsub">Agents recall previous messages this session</div></div><div class="tog on" onclick="this.classList.toggle('on')"><div class="tthumb"></div></div></div>
+    <div class="setrow"><div><div class="setlbl">Anonymize logs</div><div class="setsub">Strip PII before storing transcripts</div></div><div class="tog" onclick="this.classList.toggle('on')"><div class="tthumb"></div></div></div>
+  </div>
+  <div class="setsec">
+    <h3>Response engine</h3>
+    <div class="setrow"><div class="setlbl">Engine</div><select><option selected>Rule-based (offline)</option><option disabled>LLM — requires API key</option></select></div>
+    <div class="setrow"><div class="setlbl">Therapeutic modality</div><select><option>CBT</option><option>DBT</option><option selected>Person-centred</option><option>ACT</option></select></div>
+    <div class="setrow"><div class="setlbl">Response style</div><select><option>Concise</option><option selected>Balanced</option><option>Detailed</option></select></div>
+  </div>
+  <div class="setsec crisis-sec">
+    <h3>Safety &amp; privacy</h3>
+    <div class="setrow"><div><div class="setlbl">Offline mode</div><div class="setsub">No data leaves your computer</div></div><div class="tog on" onclick="this.classList.toggle('on')"><div class="tthumb"></div></div></div>
+    <div class="setrow"><div><div class="setlbl">Mandatory disclaimer</div><div class="setsub">Show "not a substitute for therapy" notice</div></div><div class="tog on" onclick="this.classList.toggle('on')"><div class="tthumb"></div></div></div>
+  </div>
+  <p class="disclaimer">⚠️ This is a demonstration system. Not a substitute for professional mental health care.</p>
+</div>
+
+</main>
+
+<script>
+// ── Config ──────────────────────────────────────────────────────────────────
+const AGENTS=[
+  {id:'triage',    name:'Triage Agent',     role:'First contact & routing',  icon:'🎯',color:'#1D9E75',bg:'var(--teal-l)',   status:'Active', load:78,
+   desc:'Assesses your situation, gauges severity, and routes you to the right specialist.'},
+  {id:'cbt',       name:'CBT Agent',         role:'Cognitive Behavioural',    icon:'🧠',color:'#534AB7',bg:'var(--purple-l)', status:'Active', load:55,
+   desc:'Guides thought records, identifies cognitive distortions, and builds balanced coping strategies.'},
+  {id:'crisis',    name:'Crisis Agent',      role:'Safety specialist',        icon:'🛟',color:'#D85A30',bg:'var(--coral-l)',  status:'Standby',load:12,
+   desc:'Provides immediate safety support, crisis resources, and calm de-escalation.'},
+  {id:'mindfulness',name:'Mindfulness Agent',role:'Grounding & relaxation',   icon:'🌿',color:'#0F6E56',bg:'var(--green-l)', status:'Active', load:40,
+   desc:'Leads breathing exercises, body scans, and evidence-based grounding techniques.'},
+  {id:'journal',   name:'Journal Agent',     role:'Reflective writing',       icon:'📓',color:'#BA7517',bg:'var(--amber-l)', status:'Active', load:30,
+   desc:'Offers structured journalling prompts, gratitude exercises, and reflective writing guides.'},
+];
+
+const PIPELINE_STEPS=[
+  {n:'User input received',    d:'Message validated, PII screening, rate-limit check',            i:'📥',a:'Orchestrator'},
+  {n:'Safety screening',       d:'Crisis keywords, suicidal ideation signals, escalation flags',   i:'🛟',a:'Crisis Agent'},
+  {n:'Intent classification',  d:'Rule-based classifier tags intent: anxiety / grounding / etc.',  i:'🎯',a:'Triage Agent'},
+  {n:'Agent routing',          d:'Best-fit agent selected based on intent + user history',         i:'⚡',a:'Orchestrator'},
+  {n:'Therapeutic response',   d:'Specialist agent selects response from curated evidence bank',   i:'🧠',a:'CBT / Mindfulness / Journal'},
+  {n:'Safety post-check',      d:'Response reviewed for harmful advice or boundary violations',    i:'✅',a:'Crisis Agent'},
+  {n:'Delivery & logging',     d:'Response sent, session state updated, metrics recorded',         i:'📤',a:'Orchestrator'},
+];
+
+// ── State ───────────────────────────────────────────────────────────────────
+let curAgent='triage', pRunning=false;
+const SID='sess-'+Math.random().toString(36).slice(2);
+
+// ── Tab switching ────────────────────────────────────────────────────────────
+function go(name){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
+  const order=['agents','chat','pipeline','insights','settings'];
+  document.querySelectorAll('.tab')[order.indexOf(name)].classList.add('on');
+  document.getElementById('p-'+name).classList.add('on');
+}
+
+// ── Agents panel ─────────────────────────────────────────────────────────────
+function renderGrid(){
+  document.getElementById('agent-grid').innerHTML=AGENTS.map(a=>`
+    <div class="acard">
+      <div class="acard-head">
+        <div class="aicon" style="background:${a.bg};color:${a.color}">${a.icon}</div>
+        <div><div class="aname">${a.name}</div><div class="arole">${a.role}</div></div>
+      </div>
+      <div class="adesc">${a.desc}</div>
+      <span class="abadge" style="background:${a.bg};color:${a.color}">
+        <span class="bdot" style="background:${a.color}"></span>${a.status}
+      </span>
+    </div>`).join('');
+}
+
+// ── Chat ─────────────────────────────────────────────────────────────────────
+const GREETINGS={
+  triage:     "Hi, I'm glad you're here. This is a safe, private space. What's been on your mind lately — even a few words is a great start.",
+  cbt:        "Hello! I'm your CBT Agent. I help you notice and gently challenge thought patterns that might be making things harder. What situation or thought would you like to explore?",
+  crisis:     "I'm the Crisis Agent, and I'm really glad you reached out. This is a safe space with no judgment. Can you tell me what's going on right now?",
+  mindfulness:"Welcome. Let's create a small island of calm together. What's feeling most tense or overwhelming right now?",
+  journal:    "Hello! I'm your Journal Agent. Writing is a powerful way to process feelings and gain clarity. Would you like a prompt to start, or shall we follow what's already on your mind?",
+};
+
+function renderPills(){
+  document.getElementById('pills').innerHTML=AGENTS.map(a=>`
+    <div class="apill ${a.id===curAgent?'on':''}"
+      style="${a.id===curAgent?`border-color:${a.color};color:${a.color}`:''}"
+      onclick="pickAgent('${a.id}')">
+      <span>${a.icon}</span><span>${a.name}</span>
+    </div>`).join('');
+}
+
+function pickAgent(id){
+  curAgent=id;
+  renderPills();
+  document.getElementById('msgs').innerHTML='';
+  const a=AGENTS.find(x=>x.id===id);
+  addBubble('a',GREETINGS[id],a,'greeting');
+}
+
+function addBubble(role,text,agent,intent=''){
+  const a=agent||AGENTS.find(x=>x.id===curAgent);
+  const el=document.createElement('div');
+  el.className=`msg ${role}${intent==='crisis'?' crisis-msg':''}`;
+  if(role==='u'){
+    el.innerHTML=`<div><div class="mlabel">You</div><div class="mbubble">${esc(text)}</div></div>
+    <div class="mavatar" style="background:var(--surface);border:.5px solid var(--border)">👤</div>`;
+  } else {
+    el.innerHTML=`
+    <div class="mavatar" style="background:${a.bg};color:${a.color}">${a.icon}</div>
+    <div>
+      <div class="mlabel">${a.name}${intent&&intent!=='greeting'?` <span class="ibadge">${intent}</span>`:''}</div>
+      <div class="mbubble">${esc(text)}</div>
+    </div>`;
+  }
+  const c=document.getElementById('msgs');
+  c.appendChild(el);
+  c.scrollTop=c.scrollHeight;
+}
+
+function showTyping(){
+  const c=document.getElementById('msgs');
+  const a=AGENTS.find(x=>x.id===curAgent);
+  const el=document.createElement('div');
+  el.className='msg a';el.id='typing';
+  el.innerHTML=`<div class="mavatar" style="background:${a.bg};color:${a.color}">${a.icon}</div>
+    <div class="typing"><div class="tdot"></div><div class="tdot"></div><div class="tdot"></div></div>`;
+  c.appendChild(el);c.scrollTop=c.scrollHeight;
+}
+
+async function send(){
+  const inp=document.getElementById('inp');
+  const text=inp.value.trim();
+  if(!text)return;
+  inp.value='';
+  document.getElementById('sbtn').disabled=true;
+  addBubble('u',text,null,'');
+  showTyping();
+  // small delay so typing indicator is visible
+  await sleep(420+Math.random()*350);
+  try{
+    const r=await fetch('/chat',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({session_id:SID,agent_id:curAgent,message:text})});
+    const d=await r.json();
+    document.getElementById('typing')?.remove();
+    if(d.error){addBubble('a','⚠️ '+d.error,null,'');}
+    else{addBubble('a',d.reply,null,d.intent);}
+  }catch(e){
+    document.getElementById('typing')?.remove();
+    addBubble('a','⚠️ Could not reach the server. Make sure server.py is running.',null,'');
+  }
+  document.getElementById('sbtn').disabled=false;
+  inp.focus();
+}
+
+// ── Pipeline ─────────────────────────────────────────────────────────────────
+function renderPipeline(){
+  document.getElementById('pipeline').innerHTML=PIPELINE_STEPS.map((s,i)=>`
+    <div class="pstep" id="ps${i}">
+      <div class="picon">${s.i}</div>
+      <div class="pbody">
+        <div class="pname">${s.n}</div>
+        <div class="pdetail">${s.d}</div>
+        <div class="pagent">→ ${s.a}</div>
+      </div>
+      <span class="pstat" id="pst${i}">Idle</span>
+    </div>
+    ${i<PIPELINE_STEPS.length-1?'<div class="arr">↓</div>':''}`).join('');
+}
+
+async function runPipeline(){
+  if(pRunning)return;
+  pRunning=true;
+  document.getElementById('runbtn').disabled=true;
+  for(let i=0;i<PIPELINE_STEPS.length;i++){
+    const s=document.getElementById('ps'+i),st=document.getElementById('pst'+i);
+    s.classList.add('run');st.textContent='Running…';
+    st.style.cssText='background:#E1F5EE;color:#085041';
+    await sleep(480+Math.random()*520);
+    s.classList.remove('run');s.classList.add('done');
+    st.textContent='Done ✓';st.style.cssText='background:#E1F5EE;color:#1D9E75';
+  }
+  pRunning=false;document.getElementById('runbtn').disabled=false;
+  setTimeout(()=>{
+    document.querySelectorAll('.pstep').forEach(s=>{s.classList.remove('done','run')});
+    document.querySelectorAll('[id^="pst"]').forEach(s=>{s.textContent='Idle';s.style.cssText=''});
+  },3500);
+}
+
+// ── Insights ─────────────────────────────────────────────────────────────────
+function renderWorkload(){
+  document.getElementById('workload').innerHTML=AGENTS.map(a=>`
+    <div class="witem">
+      <div class="wlbl">${a.icon} ${a.name}</div>
+      <div class="wbg"><div class="wfill" style="width:${a.load}%;background:${a.color}"></div></div>
+      <div class="wpct">${a.load}%</div>
+    </div>`).join('');
+}
+function mood(el,e,label){
+  document.querySelectorAll('.mbtn').forEach(b=>b.classList.remove('on'));
+  el.classList.add('on');
+  document.getElementById('mnote').textContent=label;
+  fetch('/mood',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({session_id:SID,mood:e})}).catch(()=>{});
+}
+
+// ── Util ─────────────────────────────────────────────────────────────────────
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>')}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+renderGrid();
+renderPills();
+renderPipeline();
+renderWorkload();
+addBubble('a',GREETINGS[curAgent],AGENTS[0],'greeting');
+</script>
+</body>
+</html>
