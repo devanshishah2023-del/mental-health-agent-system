@@ -20,7 +20,7 @@ Then open http://localhost:8000 in your browser.
 
 ## How it works
 
-Everything runs on your Mac. No data leaves your computer.
+
 
 | File | What it does |
 |------|-------------|
