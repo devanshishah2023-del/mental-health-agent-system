@@ -1,9 +1,8 @@
-# 🧠 Mental Health Agent System — 100% Offline
+# Mental Health Agent System 
 
-Multi-agent mental health support platform. **No API key. No internet. No install.**
+Multi-agent mental health support platform. 
 
-## Run it (one command)
-
+## Run it 
 ```bash
 cd mental-health-agent-system-offline
 bash run.sh
@@ -41,7 +40,7 @@ Everything runs on your Mac. No data leaves your computer.
 
 ## Requirements
 
-- Python 3 (already on every Mac)
+- Python 3 
 - That's it
 
 ## ⚠️ Disclaimer
